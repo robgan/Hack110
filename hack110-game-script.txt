@@ -1,0 +1,302 @@
+/* tslint:disable */
+
+import {
+    Sprite,
+    Container,
+    Application,
+    Rectangle,
+    Graphics,
+    DisplayObject,
+    Text,
+} from "pixi.js";
+import { print } from "introcs";
+
+// Create the background for the application
+const app = new Application({ width: 510, height: 512 });
+document.body.appendChild(app.view);
+
+// Create the class for the enemy sprite
+class Enemy {
+    sprite: Sprite;
+    constructor(sprite: Sprite) {
+        this.sprite = sprite;
+    }
+}
+
+// Create class for obstacles
+class Obstacle {
+    sprite: Sprite;
+    constructor(sprite: Sprite) {
+        this.sprite = sprite;
+    }
+}
+
+// Insert background into the app
+let background: Sprite = Sprite.from("./Floor.jpg");
+app.stage.addChild(background);
+
+// Create an array of obstacles so that the obstacles can be stored for later
+let obstacles: Obstacle[] = [];
+
+// Create the main character sprite, set its position randomly, and add it to the app
+let kris: Sprite = Sprite.from("./realKris.jpg");
+kris.anchor.set(0.5, 0.5);
+kris.x = Math.random() * 425;
+kris.y = Math.random() * 425;
+app.stage.addChild(kris);
+const speed: number = 1;
+
+// Create an enemy sprite that spawns randomly and add it to the app
+let sprite: Sprite = Sprite.from("./realBoo.jpg");
+sprite.x = Math.random() * 425;
+sprite.y = Math.random() * 425;
+let enemy: Enemy = new Enemy(sprite);
+app.stage.addChild(enemy.sprite);
+
+// Setting up values that will be used to determine which direction the sprite is moving
+let L: number = 0;
+let R: number = 0;
+let D: number = 0;
+let U: number = 0;
+
+// Defining variables that are associated with the keys pressed to control the character
+const LEFT: number = 37;
+const UP: number = 38;
+const RIGHT: number = 39;
+const DOWN: number = 40;
+
+// Determine whether a key has been pressed and determine which direction it should correspond to
+window.addEventListener("keydown", (e: KeyboardEvent): void => {
+    if (e.keyCode === LEFT) {
+        L = -1;
+    } else if (e.keyCode === UP) {
+        U = -1;
+    } else if (e.keyCode === RIGHT) {
+        R = 1;
+    } else if (e.keyCode === DOWN) {
+        D = 1;
+    }
+}, false);
+
+// Reset direction values to 0 after the key has been released
+window.addEventListener("keyup", (e: KeyboardEvent): void => {
+    if (e.keyCode === LEFT) {
+        L = 0;
+    } else if (e.keyCode === UP) {
+        U = 0;
+    } else if (e.keyCode === RIGHT) {
+        R = 0;
+    } else if (e.keyCode === DOWN) {
+        D = 0;
+    }
+}, false);
+
+// Function used to check whether two objects are colliding and returns a boolean 
+let isColliding = (a: DisplayObject, b: DisplayObject): boolean => {
+    let ab: Rectangle = a.getBounds();
+    let bb: Rectangle = b.getBounds();
+    return ab.x + ab.width > bb.x && ab.x < bb.x + bb.width && ab.y + ab.height > bb.y && ab.y < bb.y + bb.height;
+};
+
+// Repositions the kris sprite to a random location
+let resetKris = (): void => {
+    kris.x = Math.random() * 425;
+    kris.y = Math.random() * 425;
+};
+
+// Repositions the enemy sprite to a random location
+let resetEnemy = (): void => {
+    enemy.sprite.x = Math.random() * 425;
+    enemy.sprite.y = Math.random() * 425;
+};
+
+// Create text and graphic boxes that will display when certain circumstances are reached
+let messageW: Text = new Text("Kris survived!!");
+let messageBoxW: Graphics = new Graphics();
+let messageL: Text = new Text("Kris died :(");
+let messageBoxL: Graphics = new Graphics();
+
+// Create a life counter with a graphic on the screen that displays the number of lives you have
+let life = 3;
+let livesCount: Text = new Text("Lives: " + life);
+livesCount.x = 10;
+livesCount.y = 475;
+app.stage.addChild(livesCount);
+
+// Creates a counter variable for the number of rounds survived that is also displayed on the screen
+let round = 0;
+let messageLives: Text = new Text("You survived " + round + " rounds");
+let messageBoxLives: Graphics = new Graphics();
+let roundsCount: Text = new Text("Rounds Survived: " + round);
+roundsCount.x = 110;
+roundsCount.y = 475;
+app.stage.addChild(roundsCount);
+
+// Creates a time constant
+let time = 600;
+const timeconst = time;
+
+// Creates a text graphic on the screen that shows the time in seconds
+let timer: Text = new Text("" + time % 60);
+timer.style.fill = 0x000000;
+timer.x = 350;
+timer.y = 475;
+app.stage.addChild(timer);
+
+// Function that controls what happens when the player wins. Displays the number of rounds the player survived, and messages that indicate the player has won
+let handleWin = (): void => {
+    round += 1;
+    roundsCount.text = "Rounds Survived: " + round;
+    messageW.x = 216;
+    messageW.y = 236;
+    messageW.style.fill = 0xffffff;
+    messageBoxW.beginFill(0x4444aa, 0.4);
+    messageBoxW.drawRect(0, 0, 175, 50);
+    messageBoxW.x = 256 - 45;
+    messageBoxW.y = 256 - 25;
+    app.stage.addChild(messageBoxW);
+    app.stage.addChild(messageW);
+    app.ticker.stop();
+};
+
+// Function that controls what happens when the player loses. Indicates the number of rounds that the player has survived and displays messages indicating the player has lost
+let handleLose = (): void => {
+    if (life <= 1) {
+        messageLives.x = 150;
+        messageLives.y = 236;
+        messageLives.style.fill = 0xffffff;
+        messageBoxLives.beginFill(0x4444aa, 0.4);
+        messageBoxLives.drawRect(0, 0, 270, 50);
+        messageBoxLives.x = 256 - 110;
+        messageBoxLives.y = 256 - 25;
+        messageLives.text = " You survived " + round + " rounds"
+        life = 4;
+        round = 0;
+        app.stage.addChild(messageBoxLives);
+        app.stage.addChild(messageLives);
+    } else {
+        messageL.x = 216;
+        messageL.y = 236;
+        messageL.style.fill = 0xffffff;
+        messageBoxL.beginFill(0x4444aa, 0.4);
+        messageBoxL.drawRect(0, 0, 135, 50);
+        messageBoxL.x = 256 - 45;
+        messageBoxL.y = 256 - 25;
+        app.stage.addChild(messageBoxL);
+        app.stage.addChild(messageL);
+    }
+    life -= 1;
+    livesCount.text = "Lives: " + life;
+    app.ticker.stop();
+};
+
+// Makes the text box graphics interactive buttons
+messageBoxL.interactive = true;
+messageBoxL.buttonMode = true;
+messageBoxW.interactive = true;
+messageBoxW.buttonMode = true;
+messageBoxLives.interactive = true;
+messageBoxLives.buttonMode = true;
+
+// Function that determines what happens when a button is clicked.
+function onClick() {
+    app.ticker.start();
+    resetKris();
+    resetEnemy();
+    for (let i = 0; i < obstacles.length; i++) {
+        app.stage.removeChild(obstacles[i].sprite);
+    }
+    app.stage.removeChild(messageBoxL)
+    app.stage.removeChild(messageL);
+    app.stage.removeChild(messageBoxW);
+    app.stage.removeChild(messageW);
+    app.stage.removeChild(messageBoxLives);
+    app.stage.removeChild(messageLives);
+
+    obstacles = [];
+    time = timeconst;
+}
+messageBoxL.on('pointerdown', onClick);
+messageBoxW.on('pointerdown', onClick);
+messageBoxLives.on('pointerdown', onClick);
+
+// Ticker that runs the following code continuously
+app.ticker.add((delta: number): void => {
+    // Limits the number of obstacles that can be created and if the limit has not been reached it will create another obstacle
+    if (obstacles.length >= 20) {
+        let j = 7;
+    } else if (Math.random() < 0.05) {
+        let sprite: Sprite = Sprite.from("./realKeg.jpg");
+        sprite.x = Math.random() * 425;
+        sprite.y = Math.random() * 425;
+        sprite.scale.x = .3;
+        sprite.scale.y = .3;
+        while (sprite.x === kris.x && sprite.y === kris.y) {
+            sprite.x = Math.random();
+            sprite.y = Math.random();
+        }
+        while (sprite.x === enemy.sprite.x && enemy.sprite.y === kris.y) {
+            sprite.x = Math.random();
+            sprite.y = Math.random();
+        }
+        // Creates a new obstacles and adds it to the obstacles array and then adds it to the application
+        let obst = new Obstacle(sprite);
+        obstacles[obstacles.length] = obst;
+        app.stage.addChild(sprite);
+    }
+
+    // Determines the movement of the kris sprite
+    kris.x += (L + R) * (speed);
+    kris.y += (U + D) * (speed);
+
+    // Makes the enemy sprite follow the kris sprite
+    enemy.sprite.x += (kris.x - enemy.sprite.x) / 100 * speed;
+    enemy.sprite.y += (kris.y - enemy.sprite.y) / 100 * speed;
+
+    // Checks if the kris sprite and enemy sprite are colliding and if they are then call the handleLose funciton
+    if (isColliding(kris, enemy.sprite)) {
+        handleLose();
+    }
+
+    // Check if the kris sprite is colliding with any of the obstacles and handles their collision
+    for (let i = 0; i < obstacles.length; i++) {
+        if (isColliding(kris, obstacles[i].sprite)) {
+            kris.x += (kris.x - obstacles[i].sprite.x) / 10;
+            kris.y += (kris.y - obstacles[i].sprite.y) / 10;
+        }
+    }
+    // Check if the enemy sprite is colliding with any of the obstacles and handles their collision
+    for (let i = 0; i < obstacles.length; i++) {
+        if (isColliding(enemy.sprite, obstacles[i].sprite)) {
+            enemy.sprite.x += (enemy.sprite.x - obstacles[i].sprite.x) / 10;
+            enemy.sprite.y += (enemy.sprite.y - obstacles[i].sprite.y) / 10;
+        }
+    }
+
+    // Makes the enemy sprite face the direction of the kris sprite
+    if (kris.x > enemy.sprite.x) {
+        enemy.sprite.anchor.set(0.5, 0.5);
+        enemy.sprite.scale.x = -1;
+    } else {
+        enemy.sprite.anchor.set(0.5, 0.5);
+        enemy.sprite.scale.x = 1;
+    }
+
+    // Makes the kris sprite face the direction it is travelling
+    if ((L + R) * speed > 0) {
+        kris.scale.x = -1;
+
+    } else {
+        kris.scale.x = 1;
+    }
+
+    // Subtracts from the time constant and updates how much time is left in the round
+    time--;
+    timer.text = ("Time Left: " + time / 60 % 60);
+
+    // If the time reaches 0 then the player has won that round and handles the win
+    if (time <= 0) {
+        handleWin();
+        timer.text = "0";
+    }
+});
